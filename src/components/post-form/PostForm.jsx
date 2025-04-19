@@ -19,48 +19,33 @@ export default function PostForm({ post }) {
     const userData = useSelector((state) => state.auth.userData);
 
     const submit = async (data) => {
-        try {
-            if (post) {
-                const file = data.image[0] ? await appwriteService.uploadFile(data.image[0]) : null;
+        if (post) {
+            const file = data.image[0] ? await appwriteService.uploadFile(data.image[0]) : null;
 
-                if (file) {
-                    appwriteService.deleteFile(post.featuredImage);
-                }
+            if (file) {
+                appwriteService.deleteFile(post.featuredImage);
+            }
 
-                const dbPost = await appwriteService.updatePost(post.$id, {
-                    ...data,
-                    featuredImage: file ? file.$id : post.featuredImage,
-                });
+            const dbPost = await appwriteService.updatePost(post.$id, {
+                ...data,
+                featuredImage: file ? file.$id : undefined,
+            });
 
-                if (dbPost) {
-                    navigate(`/post/${dbPost.$id}`);
-                }
-            } else {
-                // For new post
-                if (!data.image[0]) {
-                    throw new Error('Please select an image for the post');
-                }
+            if (dbPost) {
+                navigate(`/post/${dbPost.$id}`);
+            }
+        } else {
+            const file = await appwriteService.uploadFile(data.image[0]);
 
-                const file = await appwriteService.uploadFile(data.image[0]);
-                
-                if (!file) {
-                    throw new Error('Failed to upload image');
-                }
-
-                const dbPost = await appwriteService.createPost({
-                    ...data,
-                    featuredImage: file.$id,
-                    userId: userData.$id,
-                });
+            if (file) {
+                const fileId = file.$id;
+                data.featuredImage = fileId;
+                const dbPost = await appwriteService.createPost({ ...data, userId: userData.$id });
 
                 if (dbPost) {
                     navigate(`/post/${dbPost.$id}`);
                 }
             }
-        } catch (error) {
-            console.error('Error in submit:', error);
-            // You might want to show this error to the user
-            alert(error.message || 'Failed to create/update post');
         }
     };
 
